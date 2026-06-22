@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Presensi Sekolah</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 flex items-center justify-center min-h-screen p-4">
+
+  <div class="bg-white p-8 rounded-2xl shadow-xl shadow-slate-100 w-full max-w-md border border-slate-100">
+    <div class="text-center mb-8">
+      <div class="inline-flex p-3 bg-blue-50 text-blue-600 rounded-xl mb-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 009 11V7a4 4 0 00-8 0v4c0 2.517.312 4.933.904 7.238m.628-9.571A13.952 13.952 0 0014 11v4c0 2.707.322 5.332.932 7.82" />
+        </svg>
+      </div>
+      <h2 class="text-2xl font-bold text-slate-800">Presensi Digital</h2>
+      <p class="text-slate-500 text-sm mt-1">Silakan masuk menggunakan akun Anda</p>
+    </div>
+
+    <form id="loginForm" class="space-y-5">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Email Sekolah</label>
+        <input type="email" id="email" placeholder="nama@sekolah.sch.id" required 
+               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition">
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+        <input type="password" id="password" placeholder="••••••••" required 
+               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition">
+      </div>
+
+      <button type="submit" 
+              class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]">
+        Masuk ke Dashboard
+      </button>
+    </form>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './firebase-config.js';
+    import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const uid = userCredential.user.uid;
+        const userDoc = await getDoc(doc(db, "users", uid));
+        
+        if (userDoc.exists()) {
+          const userRole = userDoc.data().role;
+          if (userRole === 'admin') window.location.href = 'admin.html';
+          else if (userRole === 'guru') window.location.href = 'guru.html';
+          else if (userRole === 'siswa') window.location.href = 'siswa.html';
+          else alert('Role tidak valid!');
+        } else {
+          alert('Data profil tidak ditemukan di database.');
+        }
+      } catch (error) {
+        alert('Gagal login: ' + error.message);
+      }
+    });
+  </script>
+</body>
+</html>

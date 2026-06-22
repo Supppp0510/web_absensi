@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Presensi AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex">
+
+  <aside id="sidebar" class="bg-slate-900 text-slate-300 w-64 min-h-screen fixed md:sticky top-0 left-0 -translate-x-full md:translate-x-0 transition-transform duration-300 z-30 flex flex-col justify-between border-r border-slate-800">
+    <div>
+      <div class="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950">
+        <h1 class="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+          <span class="p-1.5 bg-blue-600 text-white rounded-lg text-xs">AI</span> Presensi Sekolah
+        </h1>
+      </div>
+      <nav class="p-4 space-y-1">
+        <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-600 text-white rounded-xl transition">
+          <span>📊</span> Dashboard Admin
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 rounded-xl transition">
+          <span>⚙️</span> Pengaturan Sistem
+        </a>
+      </nav>
+    </div>
+    <div class="p-4 border-t border-slate-800">
+      <button onclick="window.location.href='index.html'" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl transition">
+        <span>🚪</span> Keluar Aplikasi
+      </button>
+    </div>
+  </aside>
+
+  <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-20 hidden md:hidden"></div>
+
+  <div class="flex-1 flex flex-col min-w-0">
+    <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleSidebar()" class="p-2 text-slate-600 hover:bg-slate-100 rounded-xl md:hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <h2 class="text-lg font-bold text-slate-800 hidden md:block">Selamat Datang, Admin</h2>
+      </div>
+      <div class="text-xs font-semibold px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full">Role: Master Admin</div>
+    </header>
+
+    <main class="p-4 md:p-8 space-y-8 max-w-7xl w-full mx-auto">
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Total Guru</p>
+            <h3 id="countGuru" class="text-3xl font-bold text-slate-800 mt-1">0</h3>
+          </div>
+          <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl text-xl">👨‍🏫</div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Total Siswa</p>
+            <h3 id="countSiswa" class="text-3xl font-bold text-slate-800 mt-1">0</h3>
+          </div>
+          <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl text-xl">🧑‍🎓</div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Integrasi AI Status</p>
+            <h3 class="text-base font-bold text-emerald-500 mt-2 flex items-center gap-1.5">
+              <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span> Ready
+            </h3>
+          </div>
+          <div class="p-3 bg-blue-50 text-blue-600 rounded-xl text-xl">🤖</div>
+        </div>
+      </section>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <section class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-1">
+          <h3 class="text-base font-bold text-slate-800 mb-4">Tambah Pengguna Baru</h3>
+          <form id="registerForm" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nama Lengkap</label>
+              <input type="text" id="regNama" placeholder="Nama Lengkap" required
+                     class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Hak Akses / Role</label>
+              <select id="regRole" onchange="handleRoleChange()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                <option value="guru">👨‍🏫 Guru</option>
+                <option value="siswa">🧑‍🎓 Siswa</option>
+              </select>
+            </div>
+            <div>
+              <label id="labelNomorInduk" class="block text-xs font-semibold text-slate-500 uppercase mb-1">NIP (Nomor Induk Pegawai)</label>
+              <input type="number" id="regNomorInduk" placeholder="Contoh: 19850123" required
+                     class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+            </div>
+
+            <div id="formKhususGuru" class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Mata Pelajaran Yang Diajar</label>
+                <input type="text" id="regMapelGuru" placeholder="Contoh: Pemrograman Web" required
+                       class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Kelas Mengajar</label>
+                <input type="text" id="regKelasGuru" placeholder="Contoh: XI-RPL-1" required
+                       class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+              </div>
+            </div>
+
+            <div id="formKhususSiswa" class="space-y-4 hidden">
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Kelas Siswa</label>
+                <input type="text" id="regKelasSiswa" placeholder="Contoh: XI-RPL-1"
+                       class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+              </div>
+            </div>
+
+            <button type="submit" class="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-xl transition">
+              Daftarkan Pengguna
+            </button>
+          </form>
+        </section>
+
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-100">
+            <h3 class="text-base font-bold text-slate-800">Daftar Pengguna Terdaftar</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50 text-slate-400 font-semibold text-xs uppercase border-b border-slate-100">
+                  <th class="px-6 py-3">Nama</th>
+                  <th class="px-6 py-3">NIP / NISN</th>
+                  <th class="px-6 py-3">Kelas / Mengajar</th>
+                  <th class="px-6 py-3">Email Sistem</th>
+                  <th class="px-6 py-3">Role</th>
+                  <th class="px-6 py-3 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="userTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('-translate-x-full');
+      document.getElementById('sidebarOverlay').classList.toggle('hidden');
+    }
+    
+    // Mengubah tampilan form & validasi required secara dinamis menyesuaikan pilihan Role
+    function handleRoleChange() {
+      const role = document.getElementById('regRole').value;
+      const label = document.getElementById('labelNomorInduk');
+      const input = document.getElementById('regNomorInduk');
+      const formGuru = document.getElementById('formKhususGuru');
+      const formSiswa = document.getElementById('formKhususSiswa');
+      
+      const mapelGuru = document.getElementById('regMapelGuru');
+      const kelasGuru = document.getElementById('regKelasGuru');
+      const kelasSiswa = document.getElementById('regKelasSiswa');
+
+      if (role === 'guru') {
+        label.innerText = "NIP (Nomor Induk Pegawai)";
+        input.placeholder = "Contoh: 19850123";
+        formGuru.classList.remove('hidden');
+        formSiswa.classList.add('hidden');
+        
+        mapelGuru.required = true;
+        kelasGuru.required = true;
+        kelasSiswa.required = false;
+      } else {
+        label.innerText = "NISN (Nomor Induk Siswa Nasional)";
+        input.placeholder = "Contoh: 00712345";
+        formGuru.classList.add('hidden');
+        formSiswa.classList.remove('hidden');
+        
+        mapelGuru.required = false;
+        kelasGuru.required = false;
+        kelasSiswa.required = true;
+      }
+    }
+  </script>
+
+  <script type="module">
+    import { db } from './firebase-config.js';
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { doc, setDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfigRaw = {
+      apiKey: "AIzaSyBv2hjCX18ZbwfmlcLlEvc5oXZ2sFtQnSw", 
+      authDomain: "web-absensi-sekolah-ai.firebaseapp.com",
+      projectId: "web-absensi-sekolah-ai",
+    };
+    const secondaryApp = initializeApp(firebaseConfigRaw, "SecondaryAppAdmin");
+    const secondaryAuth = getAuth(secondaryApp);
+
+    // KREDENSIAL GENERATOR OTOMATIS
+    function generateCredentials(nama, nomorInduk, role) {
+      const namaDepan = nama.split(' ')[0].replace(/[^a-zA-Z]/g, "");
+      const stringNomor = nomorInduk.toString();
+      const tigaAngkaTerakhir = stringNomor.slice(-3);
+      const emailOtomatis = `${nomorInduk}@sekolah.sch.id`;
+      
+      let passwordOtomatis = role === 'guru' ? `Guru_${namaDepan}_${tigaAngkaTerakhir}` : `Siswa_${namaDepan}_${tigaAngkaTerakhir}`;
+      return { emailOtomatis, passwordOtomatis };
+    }
+
+    // PROSES DAFTAR USER & MAPPING STRUKTUR DATA KE FIRESTORE
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nama = document.getElementById('regNama').value;
+      const role = document.getElementById('regRole').value;
+      const nomorInduk = document.getElementById('regNomorInduk').value;
+      
+      const { emailOtomatis, passwordOtomatis } = generateCredentials(nama, nomorInduk, role);
+
+      // Memilah data tambahan yang dikirim ke dokumen berdasarkan role
+      let dataTambahan = {};
+      if (role === 'guru') {
+        const mapel = document.getElementById('regMapelGuru').value;
+        const kelas = document.getElementById('regKelasGuru').value;
+        dataTambahan = {
+          mengajar: [{ mapel: mapel, kelas: kelas }] // Masuk ke format Array of Objects
+        };
+      } else {
+        const kelasSiswa = document.getElementById('regKelasSiswa').value;
+        dataTambahan = { kelas: kelasSiswa }; // Masuk ke format String biasa
+      }
+
+      try {
+        // 1. Buat Akun di Firebase Authentication
+        const userCredential = await createUserWithEmailAndPassword(secondaryAuth, emailOtomatis, passwordOtomatis);
+        const uid = userCredential.user.uid;
+
+        // 2. Simpan Profil Utuh + Data Mapping Kelas ke Firestore
+        await setDoc(doc(db, "users", uid), {
+          nama: nama,
+          nomor_induk: nomorInduk,
+          email: emailOtomatis,
+          role: role,
+          created_at: new Date().toISOString(),
+          ...dataTambahan
+        });
+
+        alert(`✅ Registrasi Berhasil Ter-Mapping!\n\nEmail: ${emailOtomatis}\nPassword: ${passwordOtomatis}\n\nData mapping kelas sudah berhasil dikunci ke sistem.`);
+        document.getElementById('registerForm').reset();
+        handleRoleChange();
+        loadUsers();
+      } catch (error) {
+        alert("Gagal menambahkan pengguna: " + error.message);
+      }
+    });
+
+    // LOAD DATA KE TABEL MONITORING
+    async function loadUsers() {
+      const querySnapshot = await getDocs(collection(db, "users"));
+      const tbody = document.getElementById('userTableBody');
+      tbody.innerHTML = "";
+      
+      let gCount = 0; let sCount = 0;
+      
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if(data.role === 'admin') return;
+
+        if(data.role === 'guru') gCount++;
+        if(data.role === 'siswa') sCount++;
+
+        // Render kolom keterangan kelas/mengajar secara kontekstual di tabel
+        let keteranganKelas = "-";
+        if (data.role === 'siswa') {
+          keteranganKelas = data.kelas || 'Belum diatur';
+        } else if (data.role === 'guru' && data.mengajar && data.mengajar.length > 0) {
+          keteranganKelas = data.mengajar.map(j => `${j.mapel} (${j.kelas})`).join(", ");
+        }
+
+        const badgeColor = data.role === 'guru' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100';
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/80 transition";
+        tr.innerHTML = `
+          <td class="px-6 py-4 font-medium text-slate-900">${data.nama}</td>
+          <td class="px-6 py-4 font-mono text-xs text-slate-600">${data.nomor_induk || '-'}</td>
+          <td class="px-6 py-4 text-xs text-slate-600 max-w-xs truncate">${keteranganKelas}</td>
+          <td class="px-6 py-4 text-slate-500">${data.email}</td>
+          <td class="px-6 py-4">
+            <span class="px-2.5 py-1 text-xs font-semibold rounded-full border ${badgeColor}">${data.role.toUpperCase()}</span>
+          </td>
+          <td class="px-6 py-4 text-center">
+            <button class="text-xs font-semibold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl transition" onclick="hapusUser('${docSnap.id}')">Hapus</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('countGuru').innerText = gCount;
+      document.getElementById('countSiswa').innerText = sCount;
+    }
+
+    window.hapusUser = async (uid) => {
+      if (confirm("Hapus pengguna ini secara permanen?")) {
+        try {
+          await deleteDoc(doc(db, "users", uid));
+          loadUsers();
+        } catch (error) {
+          alert("Gagal menghapus: " + error.message);
+        }
+      }
+    };
+
+    loadUsers();
+  </script>
+</body>
+</html>

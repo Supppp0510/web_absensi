@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guru Dashboard - Presensi AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex">
+
+  <aside id="sidebar" class="bg-slate-900 text-slate-300 w-64 min-h-screen fixed md:sticky top-0 left-0 -translate-x-full md:translate-x-0 transition-transform duration-300 z-30 flex flex-col justify-between border-r border-slate-800">
+    <div>
+      <div class="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950">
+        <h1 class="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+          <span class="p-1.5 bg-blue-600 text-white rounded-lg text-xs">AI</span> Presensi Sekolah
+        </h1>
+      </div>
+      
+      <nav class="p-4 space-y-1">
+        <button onclick="switchTab('dashboard')" id="menu-dashboard" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-600 text-white rounded-xl transition">
+          <span>📊</span> Dashboard Analytics
+        </button>
+        <button onclick="switchTab('absen')" id="menu-absen" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 rounded-xl transition">
+          <span>📷</span> Sesi QR Absensi
+        </button>
+        <button onclick="switchTab('rekap')" id="menu-rekap" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 rounded-xl transition">
+          <span>📅</span> Rekap & Laporan XLS
+        </button>
+      </nav>
+    </div>
+
+    <div class="p-4 border-t border-slate-800">
+      <button onclick="window.location.href='index.html'" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl transition">
+        <span>🚪</span> Keluar Aplikasi
+      </button>
+    </div>
+  </aside>
+
+  <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-20 hidden md:hidden"></div>
+
+  <div class="flex-1 flex flex-col min-w-0">
+    
+    <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleSidebar()" class="p-2 text-slate-600 hover:bg-slate-100 rounded-xl md:hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <div class="space-y-0.5">
+          <h2 id="pageTitle" class="text-lg font-bold text-slate-800">Dashboard Visual Mengajar</h2>
+          <p id="topBarJadwalAktif" class="text-xs text-slate-400">Silakan pilih kelas aktif di dropdown terlebih dahulu</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <select id="selectJadwalGlobal" onchange="handleGlobalJadwalChange()" class="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-sm">
+          <option value="">-- Hubungkan Kelas & Mapel --</option>
+        </select>
+        <div class="text-xs font-semibold px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full hidden sm:block">Role: Guru</div>
+      </div>
+    </header>
+
+    <main id="tab-dashboard" class="p-4 md:p-8 space-y-6 max-w-7xl w-full mx-auto">
+      <section class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-6 rounded-2xl shadow-sm border border-slate-800">
+        <div class="flex items-start gap-4">
+          <div class="p-3 bg-blue-500/10 text-blue-400 rounded-xl text-2xl border border-blue-500/20">🤖</div>
+          <div>
+            <h3 class="text-base font-bold tracking-wide">Rekomendasi Analitik AI</h3>
+            <p class="text-sm text-slate-300 mt-1 leading-relaxed" id="aiLogInsight">
+              Membaca log aktivitas... Silakan hubungkan salah satu kelas mengajar Anda pada dropdown di kanan atas untuk memicu diagram analitik.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <h4 class="text-sm font-bold text-slate-800">Rasio Distribusi Kehadiran</h4>
+            <p class="text-xs text-slate-400 mt-0.5">Persentase status log kelas aktif</p>
+          </div>
+          
+          <div class="flex justify-center items-center py-6 relative">
+            <svg class="w-32 h-32 transform -rotate-90">
+              <circle cx="64" cy="64" r="50" stroke="#f1f5f9" stroke-width="12" fill="transparent" />
+              <circle id="svgCircleHadir" cx="64" cy="64" r="50" stroke="#10b981" stroke-width="12" fill="transparent" 
+                      stroke-dasharray="314" stroke-dashoffset="314" class="transition-all duration-700" />
+            </svg>
+            <div class="absolute text-center">
+              <span id="txtCenterPersen" class="text-xl font-extrabold text-slate-800">0%</span>
+              <p class="text-[9px] text-slate-400 font-medium uppercase tracking-wider">Hadir</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-4 gap-1 pt-2 text-center border-t border-slate-50">
+            <div>
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span class="text-[10px] text-slate-500 block">Hadir</span>
+              <b id="lblStatsHadir" class="text-xs text-slate-800">0</b>
+            </div>
+            <div>
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              <span class="text-[10px] text-slate-500 block">Izin</span>
+              <b id="lblStatsIzin" class="text-xs text-slate-800">0</b>
+            </div>
+            <div>
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+              <span class="text-[10px] text-slate-500 block">Sakit</span>
+              <b id="lblStatsSakit" class="text-xs text-slate-800">0</b>
+            </div>
+            <div>
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+              <span class="text-[10px] text-slate-500 block">Alfa</span>
+              <b id="lblStatsAlfa" class="text-xs text-slate-800">0</b>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 lg:col-span-2">
+          <div>
+            <h4 class="text-sm font-bold text-slate-800">Metrik Kedisiplinan & Akumulasi Persentase Kelas</h4>
+            <p class="text-xs text-slate-400 mt-0.5">Rata-rata tingkat performa di database</p>
+          </div>
+          <div class="space-y-3.5 pt-1">
+            <div>
+              <div class="flex justify-between text-xs font-semibold mb-1">
+                <span class="text-slate-600">Kehadiran Tepat Waktu</span>
+                <span id="txtPersenHadir" class="font-bold text-emerald-600">0%</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                <div id="barHadir" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-700" style="width: 0%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs font-semibold mb-1">
+                <span class="text-slate-600">Keterangan Izin / Sakit Absen Resmi</span>
+                <span id="txtPersenIzin" class="font-bold text-amber-600">0%</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                <div id="barIzin" class="bg-amber-500 h-2.5 rounded-full transition-all duration-700" style="width: 0%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs font-semibold mb-1">
+                <span class="text-slate-600">Tanpa Keterangan / Alpha / Risiko Bolos</span>
+                <span id="txtPersenAlfa" class="font-bold text-rose-600">0%</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                <div id="barAlfa" class="bg-rose-500 h-2.5 rounded-full transition-all duration-700" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div>
+          <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">⚠️ AI Early Warning System</h4>
+          <p class="text-xs text-slate-400 mt-0.5">Siswa yang memerlukan perhatian khusus berdasarkan rekap log perilaku</p>
+        </div>
+        <div id="aiWarningContainer" class="divide-y divide-slate-100 text-sm">
+          <div class="py-4 text-center text-xs text-slate-400">Silakan hubungkan kelas mengajar Anda terlebih dahulu.</div>
+        </div>
+      </section>
+    </main>
+
+    <main id="tab-absen" class="p-4 md:p-8 space-y-8 max-w-7xl w-full mx-auto hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <section class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div>
+            <h3 class="text-base font-bold text-slate-800 mb-1">Buka Sesi QR Code</h3>
+            <p class="text-xs text-slate-400">Pemicu token acak pintar absensi siswa</p>
+          </div>
+          
+          <button id="btnTriggerQR" onclick="startQRSession()" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl transition shadow-lg shadow-blue-500/10">
+            Generate QR Absen Sekarang
+          </button>
+
+          <div id="sessionStatusBadge" class="hidden p-3 text-center rounded-xl font-bold text-xs"></div>
+
+          <div id="qrArea" class="hidden flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center">
+            <div id="qrcode" class="p-2 bg-white rounded-xl shadow-sm"></div>
+            <p class="text-xs font-semibold text-slate-500 mt-3 animate-pulse text-emerald-600">🟢 Sesi Absen Berjalan...</p>
+          </div>
+
+          <button id="btnSubmitAbsenFinal" onclick="submitAbsenFinal()" class="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition hidden">
+            🔒 Simpan & Kunci Absensi Permanen
+          </button>
+        </section>
+
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <h3 class="text-sm font-bold text-slate-800">Monitor Scan Masuk Kelas Aktif</h3>
+            <div class="text-xs font-bold text-slate-500 bg-white border px-3 py-1.5 rounded-xl">
+              Masuk Sesi Ini: <span id="hadirCount" class="text-emerald-600 font-extrabold">0</span>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50 text-slate-400 font-semibold text-xs uppercase border-b border-slate-100">
+                  <th class="px-6 py-3">Nama Siswa</th>
+                  <th class="px-6 py-3">Waktu Masuk</th>
+                  <th class="px-6 py-3">Status</th>
+                  <th class="px-6 py-3 text-center">Aksi Override Manual</th>
+                </tr>
+              </thead>
+              <tbody id="siswaAbsenBody" class="divide-y divide-slate-100 text-sm">
+                <tr>
+                  <td colspan="4" class="px-6 py-8 text-center text-slate-400 text-xs">Pilih kelas di filter atas untuk memonitor scan absensi.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <main id="tab-rekap" class="p-4 md:p-8 space-y-6 max-w-7xl w-full mx-auto hidden">
+      <section class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-800">Rekapitulasi Histori Absensi</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Filter riwayat log absensi siswa berdasarkan parameter tanggal dan kelas</p>
+          </div>
+          <button onclick="exportToExcel()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+            📥 Ekspor Format Laporan (.XLS)
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Mulai Dari Tanggal</label>
+            <input type="date" id="filterStartDate" onchange="renderRekapTabel()" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Sampai Dengan Tanggal</label>
+            <input type="date" id="filterEndDate" onchange="renderRekapTabel()" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none">
+          </div>
+        </div>
+
+        <div class="overflow-x-auto border border-slate-100 rounded-xl">
+          <table id="tableRekapExcel" class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-900 text-slate-300 font-semibold text-xs uppercase border-b border-slate-800">
+                <th class="px-6 py-3">Tanggal Absen</th>
+                <th class="px-6 py-3">Nama Siswa</th>
+                <th class="px-6 py-3">Mata Pelajaran</th>
+                <th class="px-6 py-3">Kelas</th>
+                <th class="px-6 py-3">Waktu Scan</th>
+                <th class="px-6 py-3">Status</th>
+                <th class="px-6 py-3">Metode</th>
+              </tr>
+            </thead>
+            <tbody id="rekapTableBody" class="divide-y divide-slate-100 text-sm bg-white">
+              <tr>
+                <td colspan="7" class="px-6 py-8 text-center text-slate-400 text-xs">Pilih kelas mengajar untuk memuat histori lengkap rekapitulasi.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('-translate-x-full');
+      document.getElementById('sidebarOverlay').classList.toggle('hidden');
+    }
+
+    function switchTab(tabName) {
+      const tabs = ['tab-dashboard', 'tab-absen', 'tab-rekap'];
+      const menus = ['menu-dashboard', 'menu-absen', 'menu-rekap'];
+      const titles = { 'dashboard': 'Dashboard Visual Mengajar', 'absen': 'Sesi Kode QR Absensi', 'rekap': 'Rekapitulasi & Ekspor Laporan XLS' };
+
+      tabs.forEach(t => document.getElementById(t).classList.add('hidden'));
+      menus.forEach(m => document.getElementById(m).className = "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 rounded-xl transition");
+
+      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+      document.getElementById(`menu-${tabName}`).className = "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-600 text-white rounded-xl transition";
+      document.getElementById('pageTitle').innerText = titles[tabName];
+      
+      document.getElementById('sidebar').classList.add('-translate-x-full');
+      document.getElementById('sidebarOverlay').classList.add('hidden');
+    }
+  </script>
+
+  <script type="module">
+    import { db, auth } from './firebase-config.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { collection, getDocs, doc, getDoc, setDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    let currentGuruMengajar = [];
+    let kelasTerpilih = "";
+    let mapelTerpilih = "";
+    let currentSesiId = "";
+    let qrInterval = null;
+    let isSesiLocked = false; // Flag status pengunci absensi
+    
+    let globalListSiswaSeKelas = [];
+    let globalRawLogsAbsensi = [];
+
+    const hariIni = new Date().toISOString().split('T')[0];
+    document.getElementById('filterStartDate').value = hariIni;
+    document.getElementById('filterEndDate').value = hariIni;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const guruDoc = await getDoc(doc(db, "users", user.uid));
+        if (guruDoc.exists() && guruDoc.data().role === 'guru') {
+          currentGuruMengajar = guruDoc.data().mengajar || [];
+          
+          const select = document.getElementById('selectJadwalGlobal');
+          select.innerHTML = '<option value="">-- Hubungkan Kelas & Mapel --</option>';
+          
+          currentGuruMengajar.forEach((jadwal, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.innerText = `${jadwal.mapel} (Kelas: ${jadwal.kelas})`;
+            select.appendChild(option);
+          });
+        }
+      } else {
+        window.location.href = 'index.html';
+      }
+    });
+
+    window.handleGlobalJadwalChange = () => {
+      const index = document.getElementById('selectJadwalGlobal').value;
+      if (index !== "") {
+        mapelTerpilih = currentGuruMengajar[index].mapel;
+        kelasTerpilih = currentGuruMengajar[index].kelas;
+        
+        // Reset status kunci setiap ganti kelas
+        isSesiLocked = false;
+        document.getElementById('btnTriggerQR').classList.remove('hidden');
+        document.getElementById('sessionStatusBadge').classList.add('hidden');
+        document.getElementById('btnSubmitAbsenFinal').classList.add('hidden');
+        document.getElementById('qrArea').classList.add('hidden');
+        clearInterval(qrInterval);
+
+        document.getElementById('topBarJadwalAktif').innerText = `Mata Pelajaran: ${mapelTerpilih} | Kelas Aktif: ${kelasTerpilih}`;
+        listenToAbsensiLog();
+      }
+    };
+
+    // 2. PEMICU GENERATE LIVE QR CODE SESI
+    window.startQRSession = async () => {
+      if (!kelasTerpilih || !mapelTerpilih) {
+        alert("Silakan hubungkan kelas mengajar Anda terlebih dahulu lewat dropdown di kanan atas!");
+        return;
+      }
+
+      currentSesiId = "SESI_" + Date.now();
+      document.getElementById('qrArea').classList.remove('hidden');
+      document.getElementById('btnSubmitAbsenFinal').classList.remove('hidden');
+
+      const updateQRToken = async () => {
+        if (isSesiLocked) return;
+        const tokenAcak = "TOKEN_" + Math.random().toString(36).substring(2, 15) + "_" + Date.now();
+        const expiresAt = new Date(Date.now() + 30 * 1000).toISOString();
+
+        await setDoc(doc(db, "absensi_sesi", currentSesiId), {
+          mapel: mapelTerpilih,
+          kelas: kelasTerpilih,
+          qr_token: tokenAcak,
+          expires_at: expiresAt,
+          status: "open",
+          created_at: new Date().toISOString()
+        });
+
+        document.getElementById("qrcode").innerHTML = "";
+        new QRCode(document.getElementById("qrcode"), { text: tokenAcak, width: 170, height: 170 });
+      };
+
+      clearInterval(qrInterval);
+      await updateQRToken();
+      qrInterval = setInterval(updateQRToken, 30000);
+    };
+
+    // TOMBOL INSTAN UNTUK SUBMIT FINAL (LOCK PERMANEN)
+    window.submitAbsenFinal = async () => {
+      if (!currentSesiId) return;
+
+      if (confirm("Apakah Anda yakin ingin MENGUNCI absensi ini? Setelah disimpan, siswa tidak bisa scan lagi dan tombol edit akan dimatikan permanen.")) {
+        try {
+          clearInterval(qrInterval); // Stop pergantian QR
+          isSesiLocked = true;
+
+          // Update status sesi di Firestore menjadi closed
+          await setDoc(doc(db, "absensi_sesi", currentSesiId), {
+            status: "closed",
+            locked_at: new Date().toISOString()
+          }, { merge: true });
+
+          // Sembunyikan QR & Tombol submit
+          document.getElementById('qrArea').classList.add('hidden');
+          document.getElementById('btnTriggerQR').classList.add('hidden');
+          document.getElementById('btnSubmitAbsenFinal').classList.add('hidden');
+
+          // Tampilkan badge terkunci
+          const badge = document.getElementById('sessionStatusBadge');
+          badge.classList.remove('hidden');
+          badge.className = "w-full p-3 text-center rounded-xl font-bold text-xs bg-red-50 text-red-700 border border-red-200 animate-bounce";
+          badge.innerText = "🔒 Absensi Sesi Ini Telah Dikunci & Disimpan Ke Laporan";
+
+          alert("Absensi berhasil disimpan permanen ke database!");
+          listenToAbsensiLog(); // Memicu re-render tabel dengan status disabled
+        } catch (error) {
+          alert("Gagal mengunci absensi: " + error.message);
+        }
+      }
+    };
+
+    // 3. MONITOR LOG ABSENSI REAL-TIME
+    async function listenToAbsensiLog() {
+      if (!kelasTerpilih) return;
+
+      const qSiswa = query(collection(db, "users"), where("role", "==", "siswa"), where("kelas", "==", kelasTerpilih));
+      const snapshotSiswa = await getDocs(qSiswa);
+      globalListSiswaSeKelas = [];
+      snapshotSiswa.forEach(docSnap => { globalListSiswaSeKelas.push({ uid: docSnap.id, ...docSnap.data() }); });
+
+      onSnapshot(collection(db, "absensi_log"), (snapshotLog) => {
+        const currentSessionLogs = {};
+        globalRawLogsAbsensi = [];
+
+        let hitungHadir = 0; let hitungIzin = 0; let hitungSakit = 0; let hitungAlfa = 0;
+        const listSiswaBermasalahAI = [];
+
+        snapshotLog.forEach(docLog => {
+          const logData = docLog.data();
+          const isSiswaKelasIni = globalListSiswaSeKelas.some(s => s.uid === logData.siswa_id);
+          
+          if (isSiswaKelasIni) {
+            globalRawLogsAbsensi.push(logData);
+            if (logData.status === 'hadir') hitungHadir++;
+            else if (logData.status === 'izin') hitungIzin++;
+            else if (logData.status === 'sakit') hitungSakit++;
+            else if (logData.status === 'alfa') hitungAlfa++;
+            
+            if (['alfa', 'izin', 'sakit'].includes(logData.status)) {
+              listSiswaBermasalahAI.push({ nama: logData.siswa_nama, status: logData.status, waktu: new Date(logData.waktu_absen).toLocaleDateString('id-ID') });
+            }
+          }
+
+          if (logData.sesi_id === currentSesiId) {
+            currentSessionLogs[logData.siswa_id] = logData;
+          }
+        });
+
+        let totalHadirSesiIni = Object.values(currentSessionLogs).filter(l => l.status === 'hadir').length;
+        document.getElementById('hadirCount').innerText = totalHadirSesiIni;
+        
+        // RENDERING TABLE DENGAN KONDISI CEK LOCK
+        const tbodyAbsen = document.getElementById('siswaAbsenBody');
+        tbodyAbsen.innerHTML = "";
+
+        globalListSiswaSeKelas.forEach(siswa => {
+          const statusLog = currentSessionLogs[siswa.uid];
+          let waktuText = "-";
+          let statusBadge = `<span class="px-2 py-0.5 text-xs rounded-full bg-slate-100 text-slate-400 border border-slate-200">Belum Absen</span>`;
+          
+          if (statusLog) {
+            waktuText = new Date(statusLog.waktu_absen).toLocaleTimeString('id-ID');
+            if (statusLog.status === 'hadir') statusBadge = `<span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">HADIR</span>`;
+            else if (statusLog.status === 'izin') statusBadge = `<span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-50 text-amber-700 border border-amber-100">IZIN</span>`;
+            else if (statusLog.status === 'sakit') statusBadge = `<span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-100">SAKIT</span>`;
+            else if (statusLog.status === 'alfa') statusBadge = `<span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-rose-50 text-rose-700 border border-rose-100">ALFA</span>`;
+          }
+
+          // Cek apakah tombol harus dinonaktifkan
+          const disabledAttr = isSesiLocked ? "disabled title='Absensi sudah dikunci'" : "";
+          const btnClass = isSesiLocked ? "opacity-30 cursor-not-allowed text-[11px] font-bold px-2 py-1 rounded-md border" : "text-[11px] font-bold px-2 py-1 rounded-md";
+
+          const tr = document.createElement('tr');
+          tr.className = "hover:bg-slate-50 transition";
+          tr.innerHTML = `
+            <td class="px-6 py-3.5 font-medium text-slate-900">${siswa.nama}</td>
+            <td class="px-6 py-3.5 font-mono text-xs">${waktuText}</td>
+            <td class="px-6 py-3.5">${statusBadge}</td>
+            <td class="px-6 py-3.5 text-center flex items-center justify-center gap-1">
+              <button ${disabledAttr} onclick="absenManualGuru('${siswa.uid}', 'hadir', '${siswa.nama}')" class="${btnClass} ${!isSesiLocked ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100':''}">Hadir</button>
+              <button ${disabledAttr} onclick="absenManualGuru('${siswa.uid}', 'izin', '${siswa.nama}')" class="${btnClass} ${!isSesiLocked ? 'bg-amber-50 text-amber-600 hover:bg-amber-100':''}">Izin</button>
+              <button ${disabledAttr} onclick="absenManualGuru('${siswa.uid}', 'sakit', '${siswa.nama}')" class="${btnClass} ${!isSesiLocked ? 'bg-blue-50 text-blue-600 hover:bg-blue-100':''}">Sakit</button>
+              <button ${disabledAttr} onclick="absenManualGuru('${siswa.uid}', 'alfa', '${siswa.nama}')" class="${btnClass} ${!isSesiLocked ? 'bg-rose-50 text-rose-600 hover:bg-rose-100':''}">Alfa</button>
+            </td>
+          `;
+          tbodyAbsen.appendChild(tr);
+        });
+
+        prosesDashboardDiagrams(globalListSiswaSeKelas.length, hitungHadir, hitungIzin, hitungSakit, hitungAlfa, listSiswaBermasalahAI);
+        renderRekapTabel();
+      });
+    }
+
+    function prosesDashboardDiagrams(totalSiswa, hadir, izin, sakit, alfa, siswaBermasalah) {
+      const grandTotalLogs = hadir + izin + sakit + alfa;
+      let persenHadir = 100; let persenIzinSakit = 0; let persenAlfa = 0;
+
+      if (grandTotalLogs > 0) {
+        persenHadir = Math.round((hadir / grandTotalLogs) * 100);
+        persenIzinSakit = Math.round(((izin + sakit) / grandTotalLogs) * 100);
+        persenAlfa = 100 - (persenHadir + persenIzinSakit);
+      }
+
+      document.getElementById("txtPersenHadir").innerText = `${persenHadir}%`;
+      document.getElementById("barHadir").style.width = `${persenHadir}%`;
+      document.getElementById("txtPersenIzin").innerText = `${persenIzinSakit}%`;
+      document.getElementById("barIzin").style.width = `${persenIzinSakit}%`;
+      document.getElementById("txtPersenAlfa").innerText = `${persenAlfa}%`;
+      document.getElementById("barAlfa").style.width = `${persenAlfa}%`;
+
+      document.getElementById('lblStatsHadir').innerText = hadir;
+      document.getElementById('lblStatsIzin').innerText = izin;
+      document.getElementById('lblStatsSakit').innerText = sakit;
+      document.getElementById('lblStatsAlfa').innerText = alfa;
+
+      document.getElementById('txtCenterPersen').innerText = `${persenHadir}%`;
+      const strokeOffset = 314 - (314 * persenHadir) / 100;
+      document.getElementById('svgCircleHadir').style.strokeDashoffset = strokeOffset;
+
+      const aiInsightText = document.getElementById("aiLogInsight");
+      if (persenHadir >= 90) {
+        aiInsightText.innerText = `✨ AI Insight (${kelasTerpilih}): Performa keterlibatan kelas sangat prima (${persenHadir}%). Proses pembelajaran ${mapelTerpilih} berjalan efektif.`;
+      } else if (persenHadir >= 75) {
+        aiInsightText.innerText = `⚠️ AI Insight (${kelasTerpilih}): Kehadiran kumulatif stabil di rata-rata ${persenHadir}%. AI mengonfirmasi rasio izin medis/sakit sebesar ${persenIzinSakit}%.`;
+      } else {
+        aiInsightText.innerText = `🚨 AI Insight Kritis (${kelasTerpilih}): Angka kehadiran anjlok menyentuh ${persenHadir}%. AI mendeteksi lonjakan tanpa keterangan/alfa sebesar ${persenAlfa}%.`;
+      }
+
+      const warningBox = document.getElementById("aiWarningContainer");
+      warningBox.innerHTML = "";
+
+      if (siswaBermasalah.length === 0) {
+        warningBox.innerHTML = `<div class="py-5 text-center text-xs text-slate-400">✅ Kondisi aman. Belum ada rekam jejak anomali kehadiran di kelas ${kelasTerpilih} saat ini.</div>`;
+      } else {
+        siswaBermasalah.slice(-3).forEach(siswa => {
+          const badgeColor = siswa.status === 'alfa' ? 'border-rose-100 text-rose-700 bg-rose-50' : 'border-amber-100 text-amber-700 bg-amber-50';
+          const itemHtml = `
+            <div class="py-3 flex items-center justify-between">
+              <div>
+                <p class="font-semibold text-slate-900">${siswa.nama}</p>
+                <p class="text-[11px] text-slate-400">Status Keterangan: ${siswa.status.toUpperCase()} (${siswa.waktu})</p>
+              </div>
+              <span class="px-2.5 py-0.5 text-[10px] font-bold border rounded-full ${badgeColor}">Perlu Atensi</span>
+            </div>`;
+          warningBox.insertAdjacentHTML('beforeend', itemHtml);
+        });
+      }
+    }
+
+    window.renderRekapTabel = () => {
+      const startFilter = document.getElementById('filterStartDate').value;
+      const endFilter = document.getElementById('filterEndDate').value;
+      const tbodyRekap = document.getElementById('rekapTableBody');
+      
+      if (!kelasTerpilih) return;
+      tbodyRekap.innerHTML = "";
+
+      const logTerfilter = globalRawLogsAbsensi.filter(log => {
+        const tglLog = log.waktu_absen.split('T')[0];
+        return tglLog >= startFilter && tglLog <= endFilter;
+      });
+
+      if (logTerfilter.length === 0) {
+        tbodyRekap.innerHTML = `<tr><td colspan="7" class="px-6 py-6 text-center text-slate-400 text-xs">Tidak ditemukan log transaksi kehadiran pada rentang tanggal ${startFilter} s/d ${endFilter}.</td></tr>`;
+        return;
+      }
+
+      logTerfilter.forEach(log => {
+        const tglFormat = log.waktu_absen.split('T')[0];
+        const jamFormat = new Date(log.waktu_absen).toLocaleTimeString('id-ID');
+        
+        let badgeColor = 'bg-slate-50 text-slate-700 border-slate-200';
+        if (log.status === 'hadir') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-100';
+        else if (log.status === 'izin') badgeColor = 'bg-amber-50 text-amber-700 border-amber-100';
+        else if (log.status === 'sakit') badgeColor = 'bg-blue-50 text-blue-700 border-blue-100';
+        else if (log.status === 'alfa') badgeColor = 'bg-rose-50 text-rose-700 border-rose-100';
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 text-xs";
+        tr.innerHTML = `
+          <td class="px-6 py-3 font-semibold">${tglFormat}</td>
+          <td class="px-6 py-3 text-slate-900 font-medium">${log.siswa_nama}</td>
+          <td class="px-6 py-3 text-slate-500">${log.mapel || mapelTerpilih}</td>
+          <td class="px-6 py-3 font-mono">${log.kelas || kelasTerpilih}</td>
+          <td class="px-6 py-3 text-slate-600">${jamFormat}</td>
+          <td class="px-6 py-3">
+            <span class="px-2 py-0.5 font-bold rounded border ${badgeColor}">${log.status.toUpperCase()}</span>
+          </td>
+          <td class="px-6 py-3 font-mono text-slate-400">${log.metode || 'QR_Scan'}</td>
+        `;
+        tbodyRekap.appendChild(tr);
+      });
+    };
+
+    window.exportToExcel = () => {
+      if (!kelasTerpilih) { alert("Pilih kelas terlebih dahulu!"); return; }
+      const tabelElement = document.getElementById("tableRekapExcel");
+      const namaFile = `Laporan_Presensi_${kelasTerpilih}_${mapelTerpilih.replace(/ /g, "_")}.xlsx`;
+      const workbook = XLSX.utils.table_to_book(tabelElement, { sheet: "Log Kehadiran" });
+      XLSX.writeFile(workbook, namaFile);
+    };
+
+    window.absenManualGuru = async (siswaId, status, siswaNama) => {
+      if (isSesiLocked) return; // Mencegah bypass eksekusi jika dikunci
+      if (!currentSesiId) { alert("Generate QR Code terlebih dahulu untuk membuat Sesi!"); return; }
+      try {
+        const logId = currentSesiId + "_" + siswaId;
+        await setDoc(doc(db, "absensi_log", logId), {
+          sesi_id: currentSesiId,
+          siswa_id: siswaId,
+          siswa_nama: siswaNama,
+          status: status,
+          mapel: mapelTerpilih,
+          kelas: kelasTerpilih,
+          waktu_absen: new Date().toISOString(),
+          metode: "guru_override"
+        });
+      } catch (error) { alert("Gagal override data: " + error.message); }
+    };
+  </script>
+</body>
+</html>

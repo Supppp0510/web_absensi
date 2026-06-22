@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Siswa Dashboard - Presensi AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex">
+
+  <aside id="sidebar" class="bg-slate-900 text-slate-300 w-64 min-h-screen fixed md:sticky top-0 left-0 -translate-x-full md:translate-x-0 transition-transform duration-300 z-30 flex flex-col justify-between border-r border-slate-800">
+    <div>
+      <div class="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950">
+        <h1 class="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+          <span class="p-1.5 bg-blue-600 text-white rounded-lg text-xs">AI</span> Presensi Sekolah
+        </h1>
+      </div>
+      
+      <nav class="p-4 space-y-1">
+        <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-600 text-white rounded-xl transition">
+          <span>📷</span> Scan QR Kehadiran
+        </a>
+      </nav>
+    </div>
+
+    <div class="p-4 border-t border-slate-800">
+      <button onclick="window.location.href='index.html'" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl transition">
+        <span>🚪</span> Keluar Aplikasi
+      </button>
+    </div>
+  </aside>
+
+  <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-20 hidden md:hidden"></div>
+
+  <div class="flex-1 flex flex-col min-w-0">
+    
+    <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleSidebar()" class="p-2 text-slate-600 hover:bg-slate-100 rounded-xl md:hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <h2 id="greetingNama" class="text-lg font-bold text-slate-800">Halo, Siswa</h2>
+      </div>
+      <div class="text-xs font-semibold px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full">Role: Pelajar</div>
+    </header>
+
+    <main class="p-4 md:p-8 max-w-xl mx-auto w-full space-y-6">
+      
+      <section class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center space-y-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-800">Scan QR Code Absen</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Arahkan kamera HP kamu ke QR Code yang ditampilkan oleh Guru didepan</p>
+        </div>
+
+        <button id="btnMulaiKamera" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-blue-500/10">
+          📸 Buka Kamera Scanner
+        </button>
+
+        <div id="scannerWrapper" class="hidden overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-2">
+          <div id="reader" class="w-full"></div>
+        </div>
+
+        <div id="statusSukses" class="hidden p-4 bg-emerald-50 border border-emerald-100 text-emerald-800 text-sm font-medium rounded-xl">
+          🎉 Absensi kamu hari ini berhasil tercatat di sistem!
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('-translate-x-full');
+      document.getElementById('sidebarOverlay').classList.toggle('hidden');
+    }
+  </script>
+
+  <script type="module">
+    import { db, auth } from './firebase-config.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { doc, getDoc, setDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    let currentSiswaUid = "";
+    let currentSiswaNama = "";
+    let html5QrcodeScanner = null;
+
+    // 1. CEK STATUS LOGIN SISWA
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentSiswaUid = user.uid;
+        // Ambil nama asli dari database users
+        const userDoc = await getDoc(doc(db, "users", currentSiswaUid));
+        if (userDoc.exists()) {
+          currentSiswaNama = userDoc.data().nama;
+          document.getElementById('greetingNama').innerText = `Halo, ${currentSiswaNama}`;
+        }
+      } else {
+        // Jika tidak ada user login, tendang balik ke halaman login awal
+        window.location.href = 'index.html';
+      }
+    });
+
+    // 2. AKTIFKAN KAMERA SCANNER
+    document.getElementById('btnMulaiKamera').addEventListener('click', () => {
+      document.getElementById('scannerWrapper').classList.remove('hidden');
+      document.getElementById('btnMulaiKamera').classList.add('hidden');
+
+      // Inisialisasi scanner
+      html5QrcodeScanner = new Html5Qrcode("reader");
+      
+      const qrCodeSuccessCallback = async (decodedText, decodedResult) => {
+        // Hentikan kamera jika QR Code terdeteksi string-nya
+        await html5QrcodeScanner.stop();
+        document.getElementById('scannerWrapper').classList.add('hidden');
+        
+        // Proses validasi token QR ke database
+        prosesVerifikasiKehadiran(decodedText);
+      };
+
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+      
+      // Jalankan kamera belakang HP secara default
+      html5QrcodeScanner.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+        .catch(err => {
+          alert("Gagal membuka kamera: " + err);
+          document.getElementById('btnMulaiKamera').classList.remove('hidden');
+        });
+    });
+
+    // 3. LOGIKA VALIDASI TOKEN QR DAN SUBMIT ABSENSI
+    async function prosesVerifikasiKehadiran(tokenHasilScan) {
+      try {
+        // Cari sesi absen di Firestore yang memiliki qr_token sama persis dengan hasil scan
+        const qSesi = query(collection(db, "absensi_sesi"), where("qr_token", "==", tokenHasilScan));
+        const querySnapshot = await getDocs(qSesi);
+
+        if (querySnapshot.empty) {
+          alert("❌ QR Code tidak valid atau sudah kedaluwarsa! Silakan minta Guru memperbarui layar QR.");
+          document.getElementById('btnMulaiKamera').classList.remove('hidden');
+          return;
+        }
+
+        let sesiId = "";
+        let expiresAtStr = "";
+        
+        querySnapshot.forEach((docSnap) => {
+          sesiId = docSnap.id;
+          expiresAtStr = docSnap.data().expires_at;
+        });
+
+        // Validasi waktu kedaluwarsa token (30 detik dari pembuatan)
+        const waktuSekarang = new Date().toISOString();
+        if (waktuSekarang > expiresAtStr) {
+          alert("❌ Sesi QR Code ini sudah kedaluwarsa karena batas waktu 30 detik terlewati.");
+          document.getElementById('btnMulaiKamera').classList.remove('hidden');
+          return;
+        }
+
+        // Tulis log kehadiran ke tabel 'absensi_log'
+        const logId = sesiId + "_" + currentSiswaUid; // ID Log gabungan unik agar siswa tidak bisa double-absen di sesi yang sama
+        await setDoc(doc(db, "absensi_log", logId), {
+          sesi_id: sesiId,
+          siswa_id: currentSiswaUid,
+          siswa_nama: currentSiswaNama,
+          status: "hadir",
+          waktu_absen: new Date().toISOString(),
+          metode: "scan_qr"
+        });
+
+        // Tampilkan feedback sukses ke layar siswa
+        document.getElementById('statusSukses').classList.remove('hidden');
+
+      } catch (error) {
+        alert("Terjadi kesalahan sistem: " + error.message);
+        document.getElementById('btnMulaiKamera').classList.remove('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
