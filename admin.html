@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard - Presensi AI</title>
+  <title>Admin Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex">
@@ -12,16 +12,16 @@
     <div>
       <div class="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950">
         <h1 class="text-lg font-bold text-white tracking-wide flex items-center gap-2">
-          <span class="p-1.5 bg-blue-600 text-white rounded-lg text-xs">AI</span> Presensi Sekolah
+          <span class="p-1.5 bg-blue-600 text-white rounded-lg text-xs">QR</span> Presensi Sekolah
         </h1>
       </div>
       <nav class="p-4 space-y-1">
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-600 text-white rounded-xl transition">
+        <button onclick="switchTab('dashboard')" id="menu-dashboard" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-600 text-white rounded-xl transition">
           <span>📊</span> Dashboard Admin
-        </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 rounded-xl transition">
+        </button>
+        <button onclick="switchTab('pengaturan')" id="menu-pengaturan" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 rounded-xl transition">
           <span>⚙️</span> Pengaturan Sistem
-        </a>
+        </button>
       </nav>
     </div>
     <div class="p-4 border-t border-slate-800">
@@ -41,12 +41,12 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <h2 class="text-lg font-bold text-slate-800 hidden md:block">Selamat Datang, Admin</h2>
+        <h2 id="headerTitle" class="text-lg font-bold text-slate-800">Selamat Datang, Admin</h2>
       </div>
       <div class="text-xs font-semibold px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full">Role: Master Admin</div>
     </header>
 
-    <main class="p-4 md:p-8 space-y-8 max-w-7xl w-full mx-auto">
+    <main id="tab-dashboard" class="p-4 md:p-8 space-y-8 max-w-7xl w-full mx-auto">
       <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
@@ -64,12 +64,12 @@
         </div>
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Integrasi AI Status</p>
-            <h3 class="text-base font-bold text-emerald-500 mt-2 flex items-center gap-1.5">
-              <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span> Ready
+            <p class="text-sm font-medium text-slate-400 uppercase tracking-wider">Metode Presensi</p>
+            <h3 class="text-base font-bold text-blue-600 mt-2 flex items-center gap-1.5">
+              <span class="h-2.5 w-2.5 rounded-full bg-blue-500 inline-block"></span> QR Code System
             </h3>
           </div>
-          <div class="p-3 bg-blue-50 text-blue-600 rounded-xl text-xl">🤖</div>
+          <div class="p-3 bg-blue-50 text-blue-600 rounded-xl text-xl">📱</div>
         </div>
       </section>
 
@@ -85,8 +85,8 @@
             <div>
               <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Hak Akses / Role</label>
               <select id="regRole" onchange="handleRoleChange()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20">
-                <option value="guru">👨‍🏫 Guru</option>
-                <option value="siswa">🧑‍🎓 Siswa</option>
+                <option value="guru">Guru</option>
+                <option value="siswa">Siswa</option>
               </select>
             </div>
             <div>
@@ -144,6 +144,91 @@
         </section>
       </div>
     </main>
+
+    <main id="tab-pengaturan" class="p-4 md:p-8 space-y-8 max-w-4xl w-full mx-auto hidden">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+          <h3 class="text-base font-bold text-slate-800">Konfigurasi Parameter Presensi QR Code</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Atur jam masuk sekolah, radius toleransi GPS (Geofencing), dan validasi kode keamanannya.</p>
+        </div>
+        
+        <form id="settingsForm" class="p-6 space-y-6 divide-y divide-slate-100">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            <div>
+              <h4 class="text-sm font-semibold text-slate-700">Waktu Presensi</h4>
+              <p class="text-xs text-slate-400 mt-0.5">Batasan jam untuk menentukan status kehadiran siswa.</p>
+            </div>
+            <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Mulai Jam Masuk</label>
+                <input type="time" id="setJamMasuk" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Batas Jam Keterlambatan</label>
+                <input type="time" id="setJamBatas" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6">
+            <div>
+              <h4 class="text-sm font-semibold text-slate-700">Geofencing Sekolah</h4>
+              <p class="text-xs text-slate-400 mt-0.5">Kunci lokasi scan QR agar siswa tidak bisa memanipulasi lokasi dari luar area sekolah.</p>
+            </div>
+            <div class="md:col-span-2 space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Latitude Sekolah</label>
+                  <input type="text" id="setLatitude" placeholder="Contoh: -7.3148" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Longitude Sekolah</label>
+                  <input type="text" id="setLongitude" placeholder="Contoh: 112.7246" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1 flex justify-between">
+                  <span>Radius Maksimal Toleransi Scan</span>
+                  <span id="radiusVal" class="text-blue-600 font-mono font-bold">50 Meter</span>
+                </label>
+                <input type="range" id="setRadius" min="10" max="200" step="5" class="w-full accent-blue-600" oninput="document.getElementById('radiusVal').innerText = this.value + ' Meter'">
+                <p class="text-[11px] text-slate-400 mt-1">Jarak maksimum toleransi posisi GPS HP siswa dengan titik tengah sekolah saat scan QR.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6">
+            <div>
+              <h4 class="text-sm font-semibold text-slate-700">Keamanan QR Token</h4>
+              <p class="text-xs text-slate-400 mt-0.5">Mencegah siswa menduplikasi atau saling kirim foto QR Code.</p>
+            </div>
+            <div class="md:col-span-2 space-y-4">
+              <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700">Dynamic QR (Refresh berkala)</label>
+                  <p class="text-[11px] text-slate-400">Kode QR akan berubah otomatis setiap beberapa detik (bila dipajang di layar monitor gerbang).</p>
+                </div>
+                <input type="checkbox" id="setDynamicQR" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+              </div>
+              
+              <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700">Lock ID Perangkat Siswa</label>
+                  <p class="text-[11px] text-slate-400">1 Akun siswa hanya bisa melakukan scanning menggunakan 1 HP terdaftar (mencegah titip akun).</p>
+                </div>
+                <input type="checkbox" id="setLockDevice" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-6 flex justify-end">
+            <button type="submit" class="py-2 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl shadow-sm transition">
+              Simpan Pengaturan QR
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
   </div>
 
   <script>
@@ -151,8 +236,33 @@
       document.getElementById('sidebar').classList.toggle('-translate-x-full');
       document.getElementById('sidebarOverlay').classList.toggle('hidden');
     }
+
+    function switchTab(tabName) {
+      const tabDashboard = document.getElementById('tab-dashboard');
+      const tabPengaturan = document.getElementById('tab-pengaturan');
+      const menuDash = document.getElementById('menu-dashboard');
+      const menuSett = document.getElementById('menu-pengaturan');
+      const headerTitle = document.getElementById('headerTitle');
+
+      if (tabName === 'dashboard') {
+        tabDashboard.classList.remove('hidden');
+        tabPengaturan.classList.add('hidden');
+        menuDash.className = "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-600 text-white rounded-xl transition";
+        menuSett.className = "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 rounded-xl transition";
+        headerTitle.innerText = "Selamat Datang, Admin";
+      } else {
+        tabDashboard.classList.add('hidden');
+        tabPengaturan.classList.remove('hidden');
+        menuSett.className = "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-600 text-white rounded-xl transition";
+        menuDash.className = "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 rounded-xl transition";
+        headerTitle.innerText = "Pengaturan Sistem";
+      }
+      
+      if(!document.getElementById('sidebar').classList.contains('-translate-x-full') && window.innerWidth < 768) {
+         toggleSidebar();
+      }
+    }
     
-    // Mengubah tampilan form & validasi required secara dinamis menyesuaikan pilihan Role
     function handleRoleChange() {
       const role = document.getElementById('regRole').value;
       const label = document.getElementById('labelNomorInduk');
@@ -169,7 +279,6 @@
         input.placeholder = "Contoh: 19850123";
         formGuru.classList.remove('hidden');
         formSiswa.classList.add('hidden');
-        
         mapelGuru.required = true;
         kelasGuru.required = true;
         kelasSiswa.required = false;
@@ -178,7 +287,6 @@
         input.placeholder = "Contoh: 00712345";
         formGuru.classList.add('hidden');
         formSiswa.classList.remove('hidden');
-        
         mapelGuru.required = false;
         kelasGuru.required = false;
         kelasSiswa.required = true;
@@ -190,7 +298,7 @@
     import { db } from './firebase-config.js';
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { doc, setDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { doc, setDoc, collection, getDocs, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfigRaw = {
       apiKey: "AIzaSyBv2hjCX18ZbwfmlcLlEvc5oXZ2sFtQnSw", 
@@ -200,18 +308,14 @@
     const secondaryApp = initializeApp(firebaseConfigRaw, "SecondaryAppAdmin");
     const secondaryAuth = getAuth(secondaryApp);
 
-    // KREDENSIAL GENERATOR OTOMATIS
     function generateCredentials(nama, nomorInduk, role) {
       const namaDepan = nama.split(' ')[0].replace(/[^a-zA-Z]/g, "");
-      const stringNomor = nomorInduk.toString();
-      const tigaAngkaTerakhir = stringNomor.slice(-3);
       const emailOtomatis = `${nomorInduk}@sekolah.sch.id`;
-      
+      const tigaAngkaTerakhir = nomorInduk.toString().slice(-3);
       let passwordOtomatis = role === 'guru' ? `Guru_${namaDepan}_${tigaAngkaTerakhir}` : `Siswa_${namaDepan}_${tigaAngkaTerakhir}`;
       return { emailOtomatis, passwordOtomatis };
     }
 
-    // PROSES DAFTAR USER & MAPPING STRUKTUR DATA KE FIRESTORE
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const nama = document.getElementById('regNama').value;
@@ -220,25 +324,20 @@
       
       const { emailOtomatis, passwordOtomatis } = generateCredentials(nama, nomorInduk, role);
 
-      // Memilah data tambahan yang dikirim ke dokumen berdasarkan role
       let dataTambahan = {};
       if (role === 'guru') {
         const mapel = document.getElementById('regMapelGuru').value;
         const kelas = document.getElementById('regKelasGuru').value;
-        dataTambahan = {
-          mengajar: [{ mapel: mapel, kelas: kelas }] // Masuk ke format Array of Objects
-        };
+        dataTambahan = { mengajar: [{ mapel: mapel, kelas: kelas }] };
       } else {
         const kelasSiswa = document.getElementById('regKelasSiswa').value;
-        dataTambahan = { kelas: kelasSiswa }; // Masuk ke format String biasa
+        dataTambahan = { kelas: kelasSiswa };
       }
 
       try {
-        // 1. Buat Akun di Firebase Authentication
         const userCredential = await createUserWithEmailAndPassword(secondaryAuth, emailOtomatis, passwordOtomatis);
         const uid = userCredential.user.uid;
 
-        // 2. Simpan Profil Utuh + Data Mapping Kelas ke Firestore
         await setDoc(doc(db, "users", uid), {
           nama: nama,
           nomor_induk: nomorInduk,
@@ -248,7 +347,7 @@
           ...dataTambahan
         });
 
-        alert(`✅ Registrasi Berhasil Ter-Mapping!\n\nEmail: ${emailOtomatis}\nPassword: ${passwordOtomatis}\n\nData mapping kelas sudah berhasil dikunci ke sistem.`);
+        alert(`Registrasi Berhasil!\n\nEmail: ${emailOtomatis}\nPassword: ${passwordOtomatis}`);
         document.getElementById('registerForm').reset();
         handleRoleChange();
         loadUsers();
@@ -257,22 +356,18 @@
       }
     });
 
-    // LOAD DATA KE TABEL MONITORING
     async function loadUsers() {
       const querySnapshot = await getDocs(collection(db, "users"));
       const tbody = document.getElementById('userTableBody');
       tbody.innerHTML = "";
-      
       let gCount = 0; let sCount = 0;
       
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
         if(data.role === 'admin') return;
-
         if(data.role === 'guru') gCount++;
         if(data.role === 'siswa') sCount++;
 
-        // Render kolom keterangan kelas/mengajar secara kontekstual di tabel
         let keteranganKelas = "-";
         if (data.role === 'siswa') {
           keteranganKelas = data.kelas || 'Belum diatur';
@@ -314,7 +409,58 @@
       }
     };
 
+    // --- OPERATIONS: QR CONFIG MANAGEMENT VIA FIRESTORE ---
+    const settingsDocRef = doc(db, "app_settings", "qr_config");
+
+    async function loadSettings() {
+      try {
+        const docSnap = await getDoc(settingsDocRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          document.getElementById('setJamMasuk').value = data.jam_masuk || "07:00";
+          document.getElementById('setJamBatas').value = data.jam_batas_keterlambatan || "07:30";
+          document.getElementById('setLatitude').value = data.geofence_latitude || "";
+          document.getElementById('setLongitude').value = data.geofence_longitude || "";
+          document.getElementById('setRadius').value = data.geofence_radius || 50;
+          document.getElementById('radiusVal').innerText = (data.geofence_radius || 50) + " Meter";
+          document.getElementById('setDynamicQR').checked = data.is_dynamic_qr || false;
+          document.getElementById('setLockDevice').checked = data.is_device_locked || false;
+        }
+      } catch (error) {
+        console.error("Gagal memuat pengaturan database: ", error);
+      }
+    }
+
+    document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const jamMasuk = document.getElementById('setJamMasuk').value;
+      const jamBatas = document.getElementById('setJamBatas').value;
+      const lat = document.getElementById('setLatitude').value;
+      const lng = document.getElementById('setLongitude').value;
+      const radius = parseInt(document.getElementById('setRadius').value);
+      const dynamicQR = document.getElementById('setDynamicQR').checked;
+      const lockDevice = document.getElementById('setLockDevice').checked;
+
+      try {
+        await setDoc(settingsDocRef, {
+          jam_masuk: jamMasuk,
+          jam_batas_keterlambatan: jamBatas,
+          geofence_latitude: lat,
+          geofence_longitude: lng,
+          geofence_radius: radius,
+          is_dynamic_qr: dynamicQR,
+          is_device_locked: lockDevice,
+          updated_at: new Date().toISOString()
+        }, { merge: true });
+
+        alert("Berhasil! Parameter presensi QR Code & Geofencing telah diperbarui di Firestore.");
+      } catch (error) {
+        alert("Gagal menyimpan konfigurasi: " + error.message);
+      }
+    });
+
     loadUsers();
+    loadSettings();
   </script>
 </body>
 </html>
